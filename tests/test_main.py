@@ -50,5 +50,23 @@ class TestMain(unittest.TestCase):
         self.assertIn("Startup checks completed successfully.", output)
 
 
+    def test_main_cli_generate_idea_delegation(self) -> None:
+        """Verify main() routes to handle_generate_idea when --generate-idea is passed."""
+        with patch.object(sys, "argv", ["main.py", "--generate-idea", "Test Topic"]):
+            with patch("ai_under_60.main.handle_generate_idea", return_value=0) as mock_handle:
+                exit_code = main()
+                self.assertEqual(exit_code, 0)
+                mock_handle.assert_called_once_with("Test Topic")
+
+    def test_main_cli_test_ai_delegation(self) -> None:
+        """Verify main() routes to test_connection when --test-ai is passed."""
+        with patch.object(sys, "argv", ["main.py", "--test-ai"]):
+            with patch("ai_under_60.ai.gemini.test_connection", return_value=0) as mock_test_conn:
+                exit_code = main()
+                self.assertEqual(exit_code, 0)
+                mock_test_conn.assert_called_once()
+
+
 if __name__ == "__main__":
     unittest.main()
+

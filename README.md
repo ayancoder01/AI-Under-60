@@ -2,10 +2,11 @@
 
 AI Under 60 is an AI-powered YouTube automation system designed to streamline video concept research, scripting, asset generation, editing, and publishing.
 
-> **Current Status**: **Milestone 0.3 - AI Provider Connection**
+> **Current Status**: **Phase 1, Milestone 1.1 - Basic AI Content-Idea Generator**
 > 
-> Milestone 0.3 connects the project to the Google Gemini API using the official `google-genai` SDK and the current Interactions API (`gemini-3.6-flash`). It provides a lightweight, secure text-generation wrapper. Note that this milestone only establishes the provider connection; AI agents, workflows, and automated pipeline logic are deferred to subsequent milestones.
-
+> Milestone 1.1 implements the first real content-generation feature: generating structured, high-retention video ideas under 60 seconds from a user-provided topic. Output is validated against strict constraints and stored locally as JSON in `data/content_ideas/`.
+>
+> *Note: This milestone establishes the content-idea generator only. Automated scripting, voiceover, video rendering, YouTube publishing, and autonomous agents are developed in later milestones. Generated ideas require human review.*
 
 ---
 
@@ -13,19 +14,29 @@ AI Under 60 is an AI-powered YouTube automation system designed to streamline vi
 
 ```text
 AI-Under-60/
+├── data/
+│   └── content_ideas/              # Stored content idea JSON files
 ├── src/
 │   └── ai_under_60/
 │       ├── __init__.py
 │       ├── config.py
 │       ├── logger.py
 │       ├── main.py
-│       └── ai/
+│       ├── ai/
+│       │   ├── __init__.py
+│       │   └── gemini.py           # Gemini Interactions API wrapper
+│       └── content/
 │           ├── __init__.py
-│           └── gemini.py
+│           ├── idea_generator.py   # Idea generation engine & prompt
+│           ├── models.py           # ContentIdea dataclass & validation
+│           └── storage.py          # JSON persistence layer
 ├── tests/
 │   ├── __init__.py
 │   ├── test_ai_gemini.py
 │   ├── test_config.py
+│   ├── test_content_models.py
+│   ├── test_content_storage.py
+│   ├── test_idea_generator.py
 │   ├── test_logger.py
 │   ├── test_main.py
 │   └── test_package.py
@@ -77,7 +88,7 @@ On Windows PowerShell:
 
 ### 3. Install Dependencies
 
-Install the required dependencies (including the official `google-genai` SDK):
+Install required dependencies (including the official `google-genai` SDK):
 
 ```powershell
 pip install -r requirements.txt
@@ -100,60 +111,89 @@ LOG_LEVEL=INFO
 # Gemini AI Provider Configuration
 GEMINI_API_KEY=your_actual_gemini_api_key_here
 GEMINI_MODEL=gemini-3.6-flash
-
 ```
 
 > **SECURITY WARNING**:
 > * **NEVER** commit your `.env` file to Git or share your API key.
 > * `.env` is ignored by `.gitignore` by default. Always verify with `git status` before committing.
 
-### 5. Run the Application (Offline Startup Check)
+---
 
-Run the application using Python from the active virtual environment:
+## Usage
 
-```powershell
-python src/ai_under_60/main.py
-```
+### 1. Generate a Content Idea (Milestone 1.1)
 
-Or using the direct path:
+Generate a structured YouTube Short idea for any topic:
 
 ```powershell
-.\.venv\Scripts\python.exe src/ai_under_60/main.py
+python src/ai_under_60/main.py --generate-idea "Why AI agents are becoming popular"
 ```
 
-*(This verifies local health and configuration readiness without making external API calls).*
+Or using the direct `.venv` python executable:
 
-### 6. Test the Live Gemini API Connection
+```powershell
+.\.venv\Scripts\python.exe src/ai_under_60/main.py --generate-idea "Why AI agents are becoming popular"
+```
 
-To manually test and verify real Gemini API connectivity:
+#### Example Output:
+
+```text
+========================================
+  AI Under 60 - Content Idea Generator
+========================================
+Topic: Why AI agents are becoming popular
+Requesting structured idea from Gemini...
+
+Generated Content Idea:
+----------------------------------------
+Title:                      Why AI Agents are Taking Over
+Hook:                       Chatbots talk, but AI agents actually DO things.
+Concept:                    Contrast passive chatbots with autonomous agents executing multi-step tasks.
+Target Audience:            Tech enthusiasts, developers, and productivity seekers
+Estimated Duration:         45s
+----------------------------------------
+Saved to:                   c:\Users\akibu\Desktop\AI-Under-60\data\content_ideas\20260904_013000_why_ai_agents_are_becoming_popular.json
+========================================
+```
+
+#### Generated JSON Schema (`data/content_ideas/*.json`):
+
+```json
+{
+  "topic": "Why AI agents are becoming popular",
+  "title": "Why AI Agents are Taking Over",
+  "hook": "Chatbots talk, but AI agents actually DO things.",
+  "concept": "Contrast passive chatbots with autonomous agents executing multi-step tasks.",
+  "target_audience": "Tech enthusiasts, developers, and productivity seekers",
+  "estimated_duration_seconds": 45
+}
+```
+
+### 2. Test Live Gemini API Connection
+
+Verify that your Gemini API credentials and model connection are working:
 
 ```powershell
 python src/ai_under_60/main.py --test-ai
 ```
 
-Or directly via the provider module:
+### 3. Application Startup Check (Offline)
+
+Perform standard environment and logger verification without calling external APIs:
 
 ```powershell
-python src/ai_under_60/ai/gemini.py
+python src/ai_under_60/main.py
 ```
 
-This sends a minimal test prompt (`"Reply with exactly: AI Under 60 connection successful."`) and verifies that the model generates a response.
+### 4. Run the Unit Test Suite
 
-### 7. Run the Test Suite
-
-Run the full unit test suite (mocked; no external API calls or network access required):
+Run all unit tests (fully mocked; zero real API calls or network access required):
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-Or from an active virtual environment:
-
-```powershell
-python -m unittest discover -s tests -v
-```
-
-### 8. Deactivate the Virtual Environment
+### 5. Deactivate the Virtual Environment
 
 When you are finished working:
 

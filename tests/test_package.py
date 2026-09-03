@@ -35,11 +35,14 @@ class TestPackage(unittest.TestCase):
 
     def test_submodules_import(self) -> None:
         """Verify internal submodules can be imported cleanly."""
-        from ai_under_60 import config, logger, main
+        from ai_under_60 import ai, config, content, logger, main
 
+        self.assertIsNotNone(ai)
         self.assertIsNotNone(config)
+        self.assertIsNotNone(content)
         self.assertIsNotNone(logger)
         self.assertIsNotNone(main)
+
 
 
 if __name__ == "__main__":

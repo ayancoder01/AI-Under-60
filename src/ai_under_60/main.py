@@ -39,11 +39,58 @@ def health_check() -> Dict[str, Any]:
     }
 
 
+def handle_generate_idea(topic: str) -> int:
+    """Handle CLI command to generate, display, and save a content idea.
+
+    Args:
+        topic: The user-specified subject/theme.
+
+    Returns:
+        0 on success, non-zero on failure.
+    """
+    if not topic or not topic.strip():
+        print("[ERROR] A non-empty topic must be provided with --generate-idea.")
+        print('Example: python src/ai_under_60/main.py --generate-idea "Why AI agents are becoming popular"')
+        return 1
+
+    print("========================================")
+    print("  AI Under 60 - Content Idea Generator")
+    print("========================================")
+    print(f"Topic: {topic.strip()}")
+    print("Requesting structured idea from Gemini...")
+
+    try:
+        from ai_under_60.content import generate_content_idea, save_content_idea
+
+        idea = generate_content_idea(topic)
+        saved_path = save_content_idea(idea)
+
+        print("\nGenerated Content Idea:")
+        print("----------------------------------------")
+        print(f"Title:                      {idea.title}")
+        print(f"Hook:                       {idea.hook}")
+        print(f"Concept:                    {idea.concept}")
+        print(f"Target Audience:            {idea.target_audience}")
+        print(f"Estimated Duration:         {idea.estimated_duration_seconds}s")
+        print("----------------------------------------")
+        print(f"Saved to:                   {saved_path}")
+        print("========================================")
+        return 0
+    except Exception as err:
+        print(f"\n[ERROR] Failed to generate content idea: {err}")
+        return 1
+
+
 def main() -> int:
     """Execute initial startup checks and confirmation output."""
     if "--test-ai" in sys.argv:
         from ai_under_60.ai.gemini import test_connection
         return test_connection()
+
+    if "--generate-idea" in sys.argv:
+        idx = sys.argv.index("--generate-idea")
+        topic_arg = sys.argv[idx + 1] if idx + 1 < len(sys.argv) and not sys.argv[idx + 1].startswith("--") else ""
+        return handle_generate_idea(topic_arg)
 
     health = health_check()
     config = get_config()
@@ -71,5 +118,6 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
 
 

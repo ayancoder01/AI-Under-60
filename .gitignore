@@ -44,3 +44,7 @@ Thumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 .DS_Store
+
+# Runtime and generated data
+data/
+
