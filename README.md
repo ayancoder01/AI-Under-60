@@ -2,11 +2,11 @@
 
 AI Under 60 is an AI-powered YouTube automation system designed to streamline video concept research, scripting, asset generation, editing, and publishing.
 
-> **Current Status**: **Phase 1, Milestone 1.1 - Basic AI Content-Idea Generator**
+> **Current Status**: **Phase 1, Milestone 1.2 - Structured Content Brief**
 > 
-> Milestone 1.1 implements the first real content-generation feature: generating structured, high-retention video ideas under 60 seconds from a user-provided topic. Output is validated against strict constraints and stored locally as JSON in `data/content_ideas/`.
+> Milestone 1.2 implements the structured content brief layer. It takes an existing `ContentIdea` and deterministically converts it into a validated `ContentBrief` with derived key points and a call-to-action, saved under `data/content_briefs/`.
 >
-> *Note: This milestone establishes the content-idea generator only. Automated scripting, voiceover, video rendering, YouTube publishing, and autonomous agents are developed in later milestones. Generated ideas require human review.*
+> *Note: This milestone establishes the intermediate brief representation between ideation and future research/scriptwriting. Automated research, scripting, voiceover, video rendering, and publishing are developed in subsequent milestones.*
 
 ---
 
@@ -15,7 +15,8 @@ AI Under 60 is an AI-powered YouTube automation system designed to streamline vi
 ```text
 AI-Under-60/
 ├── data/
-│   └── content_ideas/              # Stored content idea JSON files
+│   ├── content_ideas/              # Stored content idea JSON files (ignored by Git)
+│   └── content_briefs/             # Stored content brief JSON files (ignored by Git)
 ├── src/
 │   └── ai_under_60/
 │       ├── __init__.py
@@ -27,13 +28,15 @@ AI-Under-60/
 │       │   └── gemini.py           # Gemini Interactions API wrapper
 │       └── content/
 │           ├── __init__.py
+│           ├── brief.py            # Idea-to-brief conversion & heuristics
 │           ├── idea_generator.py   # Idea generation engine & prompt
-│           ├── models.py           # ContentIdea dataclass & validation
+│           ├── models.py           # ContentIdea & ContentBrief models
 │           └── storage.py          # JSON persistence layer
 ├── tests/
 │   ├── __init__.py
 │   ├── test_ai_gemini.py
 │   ├── test_config.py
+│   ├── test_content_brief.py
 │   ├── test_content_models.py
 │   ├── test_content_storage.py
 │   ├── test_idea_generator.py
@@ -129,47 +132,71 @@ Generate a structured YouTube Short idea for any topic:
 python src/ai_under_60/main.py --generate-idea "Why AI agents are becoming popular"
 ```
 
-Or using the direct `.venv` python executable:
+Saved to: `data/content_ideas/<timestamp>_<slug>.json`
+
+### 2. Convert an Idea to a Structured Content Brief (Milestone 1.2)
+
+Convert a saved `ContentIdea` into a validated, actionable `ContentBrief`:
 
 ```powershell
-.\.venv\Scripts\python.exe src/ai_under_60/main.py --generate-idea "Why AI agents are becoming popular"
+python src/ai_under_60/main.py --brief-from-idea "data/content_ideas/<your_idea_file>.json"
+```
+
+Or using the `.venv` executable directly:
+
+```powershell
+.\.venv\Scripts\python.exe src/ai_under_60/main.py --brief-from-idea "data\content_ideas\20260904_013550_why_ai_agents_are_becoming_popular.json"
 ```
 
 #### Example Output:
 
 ```text
 ========================================
-  AI Under 60 - Content Idea Generator
+  AI Under 60 - Content Brief Generator
 ========================================
-Topic: Why AI agents are becoming popular
-Requesting structured idea from Gemini...
+Source Idea File: data\content_ideas\20260904_013550_why_ai_agents_are_becoming_popular.json
 
-Generated Content Idea:
+Generated Content Brief:
 ----------------------------------------
-Title:                      Why AI Agents are Taking Over
-Hook:                       Chatbots talk, but AI agents actually DO things.
-Concept:                    Contrast passive chatbots with autonomous agents executing multi-step tasks.
-Target Audience:            Tech enthusiasts, developers, and productivity seekers
-Estimated Duration:         45s
+Topic:                      Why AI agents are becoming popular
+Title:                      Why Chatbots Are DEAD (Meet AI Agents)
+Hook:                       Stop asking ChatGPT questions—that's already outdated. Here is why AI Agents are taking over.
+Target Audience:            Tech enthusiasts, productivity hackers, students, and working professionals looking to automate daily tasks.
+Estimated Duration:         42s
+Key Points:
+  1. Fast-paced split-screen video contrasting passive AI (chatbots that just talk) with active AI (agents that do work)
+  2. Left side shows a chatbot giving a generic travel itinerary; Right side shows an AI Agent browsing flight sites, booking tickets, and adding events to Google Calendar autonomously
+  3. Rapid text overlays explaining 'Autonomy' and 'Execution'
+  4. On-screen demo of an agent executing 5 steps in 3 seconds while sound effects build tension
+  5. Quick summary of why companies are investing billions into this shift
+Call to Action:             Follow @AIUnder60 for more AI insights in under 60 seconds!
 ----------------------------------------
-Saved to:                   c:\Users\akibu\Desktop\AI-Under-60\data\content_ideas\20260904_013000_why_ai_agents_are_becoming_popular.json
+Saved to:                   C:\Users\akibu\Desktop\AI-Under-60\data\content_briefs\20260904_014615_why_ai_agents_are_becoming_popular_brief.json
 ========================================
 ```
 
-#### Generated JSON Schema (`data/content_ideas/*.json`):
+#### Generated Content Brief Schema (`data/content_briefs/*.json`):
 
 ```json
 {
   "topic": "Why AI agents are becoming popular",
-  "title": "Why AI Agents are Taking Over",
-  "hook": "Chatbots talk, but AI agents actually DO things.",
-  "concept": "Contrast passive chatbots with autonomous agents executing multi-step tasks.",
-  "target_audience": "Tech enthusiasts, developers, and productivity seekers",
-  "estimated_duration_seconds": 45
+  "title": "Why Chatbots Are DEAD (Meet AI Agents)",
+  "hook": "Stop asking ChatGPT questions—that's already outdated. Here is why AI Agents are taking over.",
+  "concept": "Fast-paced split-screen video contrasting passive AI...",
+  "target_audience": "Tech enthusiasts, productivity hackers...",
+  "estimated_duration_seconds": 42,
+  "key_points": [
+    "Fast-paced split-screen video contrasting passive AI with active AI",
+    "Left side shows chatbot vs right side shows agent booking flight and calendar",
+    "Rapid text overlays explaining Autonomy and Execution",
+    "On-screen demo of agent executing multi-step tasks",
+    "Quick summary of why companies are investing billions"
+  ],
+  "call_to_action": "Follow @AIUnder60 for more AI insights in under 60 seconds!"
 }
 ```
 
-### 2. Test Live Gemini API Connection
+### 3. Test Live Gemini API Connection
 
 Verify that your Gemini API credentials and model connection are working:
 
@@ -177,7 +204,7 @@ Verify that your Gemini API credentials and model connection are working:
 python src/ai_under_60/main.py --test-ai
 ```
 
-### 3. Application Startup Check (Offline)
+### 4. Application Startup Check (Offline)
 
 Perform standard environment and logger verification without calling external APIs:
 
@@ -185,7 +212,7 @@ Perform standard environment and logger verification without calling external AP
 python src/ai_under_60/main.py
 ```
 
-### 4. Run the Unit Test Suite
+### 5. Run the Unit Test Suite
 
 Run all unit tests (fully mocked; zero real API calls or network access required):
 
@@ -193,7 +220,7 @@ Run all unit tests (fully mocked; zero real API calls or network access required
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-### 5. Deactivate the Virtual Environment
+### 6. Deactivate the Virtual Environment
 
 When you are finished working:
 

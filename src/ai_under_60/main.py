@@ -81,6 +81,61 @@ def handle_generate_idea(topic: str) -> int:
         return 1
 
 
+def handle_brief_from_idea(idea_path_str: str) -> int:
+    """Handle CLI command to convert a saved ContentIdea JSON into a ContentBrief.
+
+    Args:
+        idea_path_str: Path to the ContentIdea JSON file.
+
+    Returns:
+        0 on success, non-zero on failure.
+    """
+    if not idea_path_str or not idea_path_str.strip():
+        print("[ERROR] A path to an existing ContentIdea JSON file must be provided with --brief-from-idea.")
+        print('Example: python src/ai_under_60/main.py --brief-from-idea "data/content_ideas/sample.json"')
+        return 1
+
+    file_path = Path(idea_path_str.strip())
+    if not file_path.is_file():
+        print(f"[ERROR] ContentIdea file not found: '{file_path}'.")
+        return 1
+
+    print("========================================")
+    print("  AI Under 60 - Content Brief Generator")
+    print("========================================")
+    print(f"Source Idea File: {file_path}")
+
+    try:
+        from ai_under_60.content import (
+            content_idea_to_brief,
+            load_content_idea,
+            save_content_brief,
+        )
+
+        idea = load_content_idea(file_path)
+        brief = content_idea_to_brief(idea)
+        saved_path = save_content_brief(brief)
+
+        print("\nGenerated Content Brief:")
+        print("----------------------------------------")
+        print(f"Topic:                      {brief.topic}")
+        print(f"Title:                      {brief.title}")
+        print(f"Hook:                       {brief.hook}")
+        print(f"Target Audience:            {brief.target_audience}")
+        print(f"Estimated Duration:         {brief.estimated_duration_seconds}s")
+        print("Key Points:")
+        for idx, point in enumerate(brief.key_points, 1):
+            print(f"  {idx}. {point}")
+        print(f"Call to Action:             {brief.call_to_action}")
+        print("----------------------------------------")
+        print(f"Saved to:                   {saved_path}")
+        print("========================================")
+        return 0
+    except Exception as err:
+        print(f"\n[ERROR] Failed to convert content idea to brief: {err}")
+        return 1
+
+
 def main() -> int:
     """Execute initial startup checks and confirmation output."""
     if "--test-ai" in sys.argv:
@@ -91,6 +146,12 @@ def main() -> int:
         idx = sys.argv.index("--generate-idea")
         topic_arg = sys.argv[idx + 1] if idx + 1 < len(sys.argv) and not sys.argv[idx + 1].startswith("--") else ""
         return handle_generate_idea(topic_arg)
+
+    if "--brief-from-idea" in sys.argv:
+        idx = sys.argv.index("--brief-from-idea")
+        path_arg = sys.argv[idx + 1] if idx + 1 < len(sys.argv) and not sys.argv[idx + 1].startswith("--") else ""
+        return handle_brief_from_idea(path_arg)
+
 
     health = health_check()
     config = get_config()
