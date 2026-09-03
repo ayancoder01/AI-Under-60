@@ -26,6 +26,13 @@ class TestPackage(unittest.TestCase):
 
         self.assertTrue(callable(health_check))
 
+    def test_generate_text_exported(self) -> None:
+        """Verify generate_text is exported at the package root."""
+        from ai_under_60 import generate_text
+
+        self.assertTrue(callable(generate_text))
+
+
     def test_submodules_import(self) -> None:
         """Verify internal submodules can be imported cleanly."""
         from ai_under_60 import config, logger, main

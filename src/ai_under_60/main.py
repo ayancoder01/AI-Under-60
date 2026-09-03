@@ -34,11 +34,17 @@ def health_check() -> Dict[str, Any]:
         "platform": sys.platform,
         "environment": config.app_env,
         "log_level": config.log_level,
+        "gemini_configured": config.is_gemini_configured,
+        "gemini_model": config.gemini_model,
     }
 
 
 def main() -> int:
     """Execute initial startup checks and confirmation output."""
+    if "--test-ai" in sys.argv:
+        from ai_under_60.ai.gemini import test_connection
+        return test_connection()
+
     health = health_check()
     config = get_config()
     logger = setup_logger("ai_under_60", log_level=config.log_level)
@@ -54,6 +60,8 @@ def main() -> int:
     print(f"Python Version: {health['python_version']} ({health['platform']})")
     print(f"Current Environment: {health['environment']}")
     print(f"Log Level: {health['log_level']}")
+    print(f"Gemini Configured: {'Yes' if config.is_gemini_configured else 'No'}")
+    print(f"Gemini Model: {config.gemini_model}")
     print("Startup checks completed successfully.")
     print("========================================")
 
@@ -63,4 +71,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
 

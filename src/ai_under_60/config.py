@@ -4,13 +4,15 @@ This module provides basic application configuration loaded from environment
 variables and an optional .env file using Python standard library only.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import os
 from pathlib import Path
 from typing import Optional
 
 # Valid standard log levels
 VALID_LOG_LEVELS = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+DEFAULT_GEMINI_MODEL = "gemini-3.6-flash"
+
 
 
 def _load_env_file(env_path: Optional[Path] = None) -> None:
@@ -51,6 +53,13 @@ class AppConfig:
     app_env: str = "development"
     log_level: str = "INFO"
     project_root: Path = Path(__file__).resolve().parent.parent.parent
+    gemini_api_key: Optional[str] = field(default=None, repr=False)
+    gemini_model: str = DEFAULT_GEMINI_MODEL
+
+    @property
+    def is_gemini_configured(self) -> bool:
+        """Check whether a Gemini API key is configured."""
+        return bool(self.gemini_api_key and self.gemini_api_key.strip())
 
 
 def get_config(
@@ -78,11 +87,22 @@ def get_config(
     raw_log_level = os.getenv("LOG_LEVEL", "INFO").strip().upper()
     log_level = raw_log_level if raw_log_level in VALID_LOG_LEVELS else "INFO"
 
+    gemini_api_key = os.getenv("GEMINI_API_KEY", "").strip() or None
+    raw_gemini_model = os.getenv("GEMINI_MODEL", "").strip()
+    if not raw_gemini_model or raw_gemini_model == "gemini-2.5-flash":
+        gemini_model = DEFAULT_GEMINI_MODEL
+    else:
+        gemini_model = raw_gemini_model
+
+
     root = project_root if project_root is not None else Path(__file__).resolve().parent.parent.parent
 
     return AppConfig(
         app_env=app_env,
         log_level=log_level,
         project_root=root,
+        gemini_api_key=gemini_api_key,
+        gemini_model=gemini_model,
     )
+
 
