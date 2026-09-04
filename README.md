@@ -2,11 +2,11 @@
 
 AI Under 60 is an AI-powered YouTube automation system designed to streamline video concept research, scripting, asset generation, editing, and publishing.
 
-> **Current Status**: **Phase 1, Milestone 1.3 - Content Generation Pipeline**
+> **Current Status**: **Phase 1, Milestone 1.5 - Live Web Research Provider**
 > 
-> Milestone 1.3 implements the end-to-end content generation pipeline connecting topic ideation, validation, brief derivation, and artifact persistence in a unified orchestration workflow.
+> Milestone 1.5 implements live web research capabilities via `WebResearchProvider`. It retrieves real web documents via HTTP search, extracts readable page text, derives factual evidence excerpts, conservatively assesses claims, and stores research packages in `data/research/`.
 >
-> *Note: This milestone establishes the complete content ideation and brief pipeline. Automated research, scripting, voiceover, video rendering, and YouTube publishing are developed in subsequent milestones.*
+> *Strict Integrity Rule: This system never fabricates URLs, publishers, titles, excerpts, or citations. All sources and evidence originate from actual retrieved web content. Claims without evidence remain strictly unsupported.*
 
 ---
 
@@ -16,7 +16,8 @@ AI Under 60 is an AI-powered YouTube automation system designed to streamline vi
 AI-Under-60/
 ├── data/
 │   ├── content_ideas/              # Stored content idea JSON files (ignored by Git)
-│   └── content_briefs/             # Stored content brief JSON files (ignored by Git)
+│   ├── content_briefs/             # Stored content brief JSON files (ignored by Git)
+│   └── research/                   # Stored research package JSON files (ignored by Git)
 ├── src/
 │   └── ai_under_60/
 │       ├── __init__.py
@@ -26,13 +27,20 @@ AI-Under-60/
 │       ├── ai/
 │       │   ├── __init__.py
 │       │   └── gemini.py           # Gemini Interactions API wrapper
-│       └── content/
+│       ├── content/
+│       │   ├── __init__.py
+│       │   ├── brief.py            # Idea-to-brief conversion & heuristics
+│       │   ├── idea_generator.py   # Idea generation engine & prompt
+│       │   ├── models.py           # ContentIdea & ContentBrief models
+│       │   ├── pipeline.py         # End-to-end orchestration pipeline
+│       │   └── storage.py          # JSON persistence layer
+│       └── research/
 │           ├── __init__.py
-│           ├── brief.py            # Idea-to-brief conversion & heuristics
-│           ├── idea_generator.py   # Idea generation engine & prompt
-│           ├── models.py           # ContentIdea & ContentBrief models
-│           ├── pipeline.py         # End-to-end orchestration pipeline
-│           └── storage.py          # JSON persistence layer
+│           ├── models.py           # Source, Evidence, Claim, ResearchPackage models
+│           ├── provider.py         # ResearchProvider protocol & MockResearchProvider
+│           ├── request.py          # ResearchRequest & ContentBrief conversion
+│           ├── storage.py          # Research package JSON persistence
+│           └── web.py              # WebResearchProvider (search & page fetch)
 ├── tests/
 │   ├── __init__.py
 │   ├── test_ai_gemini.py
@@ -44,7 +52,9 @@ AI-Under-60/
 │   ├── test_logger.py
 │   ├── test_main.py
 │   ├── test_package.py
-│   └── test_pipeline.py
+│   ├── test_pipeline.py
+│   ├── test_research.py
+│   └── test_web_research.py
 ├── .env.example
 ├── .gitignore
 ├── README.md
@@ -124,9 +134,42 @@ GEMINI_MODEL=gemini-3.6-flash
 
 ---
 
+## Research Engine (Milestones 1.4 & 1.5)
+
+The research layer establishes an evidence contract for validating claims against real web information:
+
+### Core Data Models
+* **`Source`**: Represents an external document (`title`, `url`, `publisher`, `retrieved_at`).
+* **`Evidence`**: Factual excerpt extracted from a source (`source_url`, `excerpt`, `relevance`).
+* **`Claim`**: Factual assertion with evaluation status (`supported`, `contradicted`, `uncertain`, `unsupported`) and supporting evidence list.
+* **`ResearchPackage`**: Aggregated research findings (`topic`, `sources`, `claims`, `summary`), saved to `data/research/`.
+* **`ResearchRequest`**: Deterministic query specification derived from `ContentBrief` (`create_research_request(brief)`).
+
+### Provider Architecture
+* **`ResearchProvider`**: Protocol decoupling evidence gathering from downstream consumers.
+* **`MockResearchProvider`**: Offline mock provider for testing without external services.
+* **`WebResearchProvider`**: Live research provider executing bounded HTTP search, page fetching, clean text extraction, and conservative evidence verification without browser automation or external scraping frameworks.
+
+### Integrity & Testing
+* **Integrity Guarantee**: Never invents facts, citations, or URLs. Claims without verified matching excerpts are marked `unsupported`.
+* **Offline Unit Tests**: All unit tests mock the network layer, verifying 100% of pipeline logic offline with zero network dependency.
+* **Live Verification**: Live CLI execution performs real HTTP requests to gather real web evidence.
+
+---
+
 ## Usage
 
-### 1. Run the Full Content Generation Pipeline (Milestone 1.3)
+### 1. Conduct Live Web Research (Milestone 1.5)
+
+Run live web research on any topic to retrieve real web sources and evaluate claims:
+
+```powershell
+python src/ai_under_60/main.py --research "Why AI agents are becoming popular"
+```
+
+Saved to: `data/research/<timestamp>_<slug>_research.json`
+
+### 2. Run the Content Generation Pipeline (Milestone 1.3)
 
 Run the end-to-end pipeline to generate a validated `ContentIdea`, convert it into a structured `ContentBrief`, and persist both JSON artifacts:
 
@@ -134,42 +177,7 @@ Run the end-to-end pipeline to generate a validated `ContentIdea`, convert it in
 python src/ai_under_60/main.py --generate-content "Why AI agents are becoming popular"
 ```
 
-Or using the `.venv` executable directly:
-
-```powershell
-.\.venv\Scripts\python.exe src/ai_under_60/main.py --generate-content "Why AI agents are becoming popular"
-```
-
-#### Example Output:
-
-```text
-========================================
-  AI Under 60 - Content Generation Pipeline
-========================================
-Topic: Why AI agents are becoming popular
-Running end-to-end content generation pipeline...
-
-Pipeline Result:
-----------------------------------------
-Topic:                      Why AI agents are becoming popular
-Title:                      Why Chatbots Are DEAD (Meet AI Agents)
-Hook:                       Stop asking ChatGPT questions—that's already outdated.
-Target Audience:            Tech enthusiasts, productivity hackers, students, and working professionals
-Estimated Duration:         42s
-Key Points:
-  1. Fast-paced split-screen video contrasting passive AI with active AI
-  2. Left side shows chatbot vs right side shows agent booking flight and calendar
-  3. Rapid text overlays explaining Autonomy and Execution
-  4. On-screen demo of agent executing multi-step tasks
-  5. Quick summary of why companies are investing billions into this shift
-Call to Action:             Follow @AIUnder60 for more AI insights in under 60 seconds!
-----------------------------------------
-ContentIdea Saved to:       C:\...\data\content_ideas\20260904_013550_why_ai_agents_are_becoming_popular.json
-ContentBrief Saved to:      C:\...\data\content_briefs\20260904_014615_why_ai_agents_are_becoming_popular_brief.json
-========================================
-```
-
-### 2. Generate a Content Idea Only (Milestone 1.1)
+### 3. Generate a Content Idea Only (Milestone 1.1)
 
 Generate and persist a structured YouTube Short idea:
 
@@ -179,7 +187,7 @@ python src/ai_under_60/main.py --generate-idea "Why AI agents are becoming popul
 
 Saved to: `data/content_ideas/<timestamp>_<slug>.json`
 
-### 3. Convert an Existing Idea into a Content Brief (Milestone 1.2)
+### 4. Convert an Existing Idea into a Content Brief (Milestone 1.2)
 
 Convert an existing saved `ContentIdea` into an actionable `ContentBrief`:
 
@@ -189,7 +197,7 @@ python src/ai_under_60/main.py --brief-from-idea "data/content_ideas/<your_idea_
 
 Saved to: `data/content_briefs/<timestamp>_<slug>_brief.json`
 
-### 4. Test Live Gemini API Connection
+### 5. Test Live Gemini API Connection
 
 Verify that your Gemini API credentials and model connection are working:
 
@@ -197,7 +205,7 @@ Verify that your Gemini API credentials and model connection are working:
 python src/ai_under_60/main.py --test-ai
 ```
 
-### 5. Application Startup Check (Offline)
+### 6. Application Startup Check (Offline)
 
 Perform standard environment and logger verification without calling external APIs:
 
@@ -205,7 +213,7 @@ Perform standard environment and logger verification without calling external AP
 python src/ai_under_60/main.py
 ```
 
-### 6. Run the Unit Test Suite
+### 7. Run the Unit Test Suite
 
 Run all unit tests (fully mocked; zero real API calls or network access required):
 
@@ -213,7 +221,7 @@ Run all unit tests (fully mocked; zero real API calls or network access required
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-### 7. Deactivate the Virtual Environment
+### 8. Deactivate the Virtual Environment
 
 When you are finished working:
 
