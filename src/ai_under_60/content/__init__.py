@@ -13,6 +13,11 @@ from ai_under_60.content.models import (
     ContentIdea,
     ContentValidationError,
 )
+from ai_under_60.content.pipeline import (
+    PipelineError,
+    PipelineResult,
+    run_content_pipeline,
+)
 from ai_under_60.content.storage import (
     StorageError,
     load_content_brief,
@@ -26,12 +31,15 @@ __all__ = [
     "ContentIdea",
     "ContentValidationError",
     "IdeaGenerationError",
+    "PipelineError",
+    "PipelineResult",
     "StorageError",
     "content_idea_to_brief",
     "extract_key_points_from_concept",
     "generate_content_idea",
     "load_content_brief",
     "load_content_idea",
+    "run_content_pipeline",
     "save_content_brief",
     "save_content_idea",
 ]

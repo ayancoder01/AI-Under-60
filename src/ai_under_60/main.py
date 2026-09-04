@@ -136,11 +136,70 @@ def handle_brief_from_idea(idea_path_str: str) -> int:
         return 1
 
 
+def handle_generate_content(topic: str) -> int:
+    """Handle CLI command to execute the full content generation pipeline.
+
+    Args:
+        topic: The user-specified subject/theme.
+
+    Returns:
+        0 on success, non-zero on failure.
+    """
+    if not topic or not topic.strip():
+        print("[ERROR] A non-empty topic must be provided with --generate-content.")
+        print('Example: python src/ai_under_60/main.py --generate-content "Why AI agents are becoming popular"')
+        return 1
+
+    print("========================================")
+    print("  AI Under 60 - Content Generation Pipeline")
+    print("========================================")
+    print(f"Topic: {topic.strip()}")
+    print("Running end-to-end content generation pipeline...")
+
+    try:
+        from ai_under_60.content import run_content_pipeline
+
+        result = run_content_pipeline(topic.strip())
+
+        print("\nPipeline Result:")
+        print("----------------------------------------")
+        print(f"Topic:                      {result.idea.topic}")
+        print(f"Title:                      {result.brief.title}")
+        print(f"Hook:                       {result.brief.hook}")
+        print(f"Target Audience:            {result.brief.target_audience}")
+        print(f"Estimated Duration:         {result.brief.estimated_duration_seconds}s")
+        print("Key Points:")
+        for idx, point in enumerate(result.brief.key_points, 1):
+            print(f"  {idx}. {point}")
+        print(f"Call to Action:             {result.brief.call_to_action}")
+        print("----------------------------------------")
+        print(f"ContentIdea Saved to:       {result.idea_path}")
+        print(f"ContentBrief Saved to:      {result.brief_path}")
+        print("========================================")
+        return 0
+    except Exception as err:
+        print(f"\n[ERROR] Content generation pipeline failed: {err}")
+        return 1
+
+
 def main() -> int:
     """Execute initial startup checks and confirmation output."""
+    # Ensure UTF-8 output encoding on Windows terminals to safely display emojis and unicode
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+    if hasattr(sys.stderr, "reconfigure"):
+        try:
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
     if "--test-ai" in sys.argv:
         from ai_under_60.ai.gemini import test_connection
         return test_connection()
+
 
     if "--generate-idea" in sys.argv:
         idx = sys.argv.index("--generate-idea")
@@ -151,6 +210,12 @@ def main() -> int:
         idx = sys.argv.index("--brief-from-idea")
         path_arg = sys.argv[idx + 1] if idx + 1 < len(sys.argv) and not sys.argv[idx + 1].startswith("--") else ""
         return handle_brief_from_idea(path_arg)
+
+    if "--generate-content" in sys.argv:
+        idx = sys.argv.index("--generate-content")
+        topic_arg = sys.argv[idx + 1] if idx + 1 < len(sys.argv) and not sys.argv[idx + 1].startswith("--") else ""
+        return handle_generate_content(topic_arg)
+
 
 
     health = health_check()

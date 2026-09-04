@@ -66,7 +66,22 @@ class TestMain(unittest.TestCase):
                 self.assertEqual(exit_code, 0)
                 mock_test_conn.assert_called_once()
 
+    def test_main_cli_brief_from_idea_delegation(self) -> None:
+        """Verify main() routes to handle_brief_from_idea when --brief-from-idea is passed."""
+        with patch.object(sys, "argv", ["main.py", "--brief-from-idea", "idea.json"]):
+            with patch("ai_under_60.main.handle_brief_from_idea", return_value=0) as mock_handle:
+                exit_code = main()
+                self.assertEqual(exit_code, 0)
+                mock_handle.assert_called_once_with("idea.json")
+
+    def test_main_cli_generate_content_delegation(self) -> None:
+        """Verify main() routes to handle_generate_content when --generate-content is passed."""
+        with patch.object(sys, "argv", ["main.py", "--generate-content", "Test Topic"]):
+            with patch("ai_under_60.main.handle_generate_content", return_value=0) as mock_handle:
+                exit_code = main()
+                self.assertEqual(exit_code, 0)
+                mock_handle.assert_called_once_with("Test Topic")
+
 
 if __name__ == "__main__":
     unittest.main()
-
